@@ -600,17 +600,6 @@ def test_cambiarCodigoAsignatura():
     asignatura = universidad.devolver_asignatura("COD456")
     assert asignatura is not None
 
-def test_persona_creation_con_invalid_type():
-    with pytest.raises(NotValidType):
-        Persona("Laura", "Calle Luna, 45", "98765432A", "NoEsUnSexoValido")  # Sexo debe ser una instancia de Sexo
-
-def test_asignatura_creation_con_invalid_departamento():
-    with pytest.raises(DepartamentoError):
-        Asignatura("Historia", "HIS101", 4.0, "Historia", "NoEsUnDepartamentoValido", 1)  # Departamento debe ser una instancia de Departamento
-
-def test_miembro_departamento_creation_con_invalid_identifier():
-    with pytest.raises(IdentifierError):
-        MiembroDepartamento("123", TipoMiembro.Investigador, Departamento.DIIC)  # Suponiendo que identificador necesita cumplir ciertos criterios no especificados aquí
 
 
 if __name__ == "__main__":

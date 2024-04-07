@@ -708,96 +708,108 @@ class Universidad:
 
         print(f"Total: {total}")
 
-def test_add_estudiante():
+def test_incorporar_estudiante():
     universidad = Universidad("Nombre Universidad", "Dirección Universidad")
-    universidad.add_estudiante("Nombre Estudiante", "Dirección Estudiante", "12345678A", "123", "M")
-    estudiante = universidad.devolver_estudiante("123")
+    sexo = Sexo.Masculino
+    universidad.incorporar_estudiante("Nombre Estudiante", "Dirección Estudiante", "12345678A", "123", sexo)
+    estudiante = universidad.devolverEstudiante("123")
     assert estudiante is not None
     assert estudiante.nombre == "Nombre Estudiante"
 
-def test_add_profesor():
+def test_incorporar_profesor():
     universidad = Universidad("Nombre Universidad", "Dirección Universidad")
-    universidad.add_profesor("Nombre Profesor", "Dirección Profesor", "87654321B", "456", "M", TipoMiembro.Titular, Departamento.DIIC)
-    profesor = universidad.devolver_miembro("456")
+    sexo = Sexo.Masculino
+    tipo = TipoMiembro.Asociado
+    departamento = Departamento.DIIC
+    universidad.incorporar_profesor("Jorge Larrey", "Calle Olmo", "54328-B", "a-4356", sexo, tipo, departamento)
+    profesor = universidad.devolverMiembro("a-4356")
     assert profesor is not None
-    assert profesor.nombre == "Nombre Profesor"
+    assert profesor.nombre == "Jorge Larrey"
 
-def test_add_investigador():
+def test_incorporar_investigador():
     universidad = Universidad("Nombre Universidad", "Dirección Universidad")
-    universidad.add_investigador("Nombre Investigador", "Dirección Investigador", "55555555X", "789", "M", Departamento.DIS, "Área Investigación")
-    investigador = universidad.devolver_miembro("789")
+    sexo = Sexo.Masculino
+    departamento = Departamento.DIS
+    area_investigacion = AreaInvestigacion.InvestigacionOperativa
+    universidad.incorporar_investigador("Nombre Investigador", "Dirección Investigador", "55555555X", "789", sexo, departamento, area_investigacion)
+    investigador = universidad.devolverMiembro("789")
     assert investigador is not None
     assert investigador.nombre == "Nombre Investigador"
 
-def test_add_asignatura():
+def test_incorporar_asignatura():
     universidad = Universidad("Nombre Universidad", "Dirección Universidad")
-    universidad.add_asignatura("Nombre Asignatura", "COD123", 6, "Carrera", 2, Departamento.DIIC)
-    asignatura = universidad.devolver_asignatura("COD123")
+    universidad.incorporar_asignatura("Nombre Asignatura", "COD123", 6, "Carrera", 2, Departamento.DIIC)
+    asignatura = universidad.devolverAsignatura("COD123")
     assert asignatura is not None
     assert asignatura.nombre == "Nombre Asignatura"
-
-
+#Usamos capfd  para capturar la salida impresa usando la funcionalidad de pytest para capturar la salida estándar
 def test_mostrar_asignaturas_departamento(capfd):
     universidad = Universidad("Nombre Universidad", "Dirección Universidad")
-    universidad.add_asignatura("Nombre Asignatura", "COD123", 6, "Carrera", 2, Departamento.DIIC)
+    universidad.incorporar_asignatura("Nombre Asignatura", "COD123", 6, "Carrera", 2, Departamento.DIIC)
     universidad.mostrar_asignaturas_departamento(Departamento.DIIC)
-    out, _ = capfd.readouterr()
+    out, err = capfd.readouterr()
     assert "Nombre Asignatura" in out
+
 
 def test_matricular():
     universidad = Universidad("Nombre Universidad", "Dirección Universidad")
-    universidad.add_estudiante("Nombre Estudiante", "Dirección Estudiante", "12345678A", "123", "M")
-    universidad.add_asignatura("Nombre Asignatura", "COD123", 6, "Carrera", 2, Departamento.DIIC)
+    universidad.incorporar_estudiante("Nombre Estudiante", "Dirección Estudiante", "12345678A", "123", Sexo.Masculino)
+    universidad.incorporar_asignatura("Nombre Asignatura", "COD123", 6, "Carrera", 2, Departamento.DIIC)
     universidad.matricular("COD123", "123")
-    estudiante = universidad.devolver_estudiante("123")
-    assert len(estudiante.asignaturas()) == 1
+    estudiante = universidad.devolverEstudiante("123")
+    assert "COD123" in [asignatura.codigo_asignatura for asignatura in estudiante.asignaturas()]
 
 def test_desmatricular():
     universidad = Universidad("Nombre Universidad", "Dirección Universidad")
-    universidad.add_estudiante("Nombre Estudiante", "Dirección Estudiante", "12345678A", "123", "M")
-    universidad.add_asignatura("Nombre Asignatura", "COD123", 6, "Carrera", 2, Departamento.DIIC)
+    universidad.incorporar_estudiante("Nombre Estudiante", "Dirección Estudiante", "12345678A", "123", Sexo.Masculino)
+    universidad.incorporar_asignatura("Nombre Asignatura", "COD123", 6, "Carrera", 2, Departamento.DIIC)
     universidad.matricular("COD123", "123")
     universidad.desmatricular("COD123", "123")
-    estudiante = universidad.devolver_estudiante("123")
-    assert len(estudiante.asignaturas()) == 0
+    estudiante = universidad.devolverEstudiante("123")
+    assert "COD123" not in [asignatura.codigo_asignatura for asignatura in estudiante.asignaturas()]
 
-def test_add_asignatura_profesor():
+def test_vincular_profesor_asignatura():
     universidad = Universidad("Nombre Universidad", "Dirección Universidad")
-    universidad.add_profesor("Nombre Profesor", "Dirección Profesor", "87654321B", "456", "M", TipoMiembro.Titular, Departamento.DIIC)
-    universidad.add_asignatura("Nombre Asignatura", "COD123", 6, "Carrera", 2, Departamento.DIIC)
-    universidad.add_asignatura_profesor("COD123", "456")
-    profesor = universidad.devolver_miembro("456")
-    assert len(profesor.asignaturas()) == 1
+    universidad.incorporar_profesor("Jorge Larrey", "Calle Olmo", "54328-B", "a-4356", Sexo.Masculino, TipoMiembro.Asociado, Departamento.DIIC)
+    universidad.incorporar_asignatura("Nombre Asignatura", "COD123", 6, "Carrera", 2, Departamento.DIIC)
+    universidad.vincularProfesorAsignatura("COD123", "a-4356")
+    profesor = universidad.devolverMiembro("a-4356")
+    assert "COD123" in [asignatura.codigo_asignatura for asignatura in profesor.asignaturas()]
 
-def test_eliminar_asignatura_profesor():
+def test_desvincular_profesor_asignatura():
     universidad = Universidad("Nombre Universidad", "Dirección Universidad")
-    universidad.add_profesor("Nombre Profesor", "Dirección Profesor", "87654321B", "456", "M", TipoMiembro.Titular, Departamento.DIIC)
-    universidad.add_asignatura("Nombre Asignatura", "COD123", 6, "Carrera", 2, Departamento.DIIC)
-    universidad.add_asignatura_profesor("COD123", "456")
-    universidad.eliminar_asignatura_profesor("COD123", "456")
-    profesor = universidad.devolver_miembro("456")
-    assert len(profesor.asignaturas()) == 0
+    universidad.incorporar_profesor("Jorge Larrey", "Calle Olmo", "54328-B", "a-4356", Sexo.Masculino, TipoMiembro.Asociado, Departamento.DIIC)
+    universidad.incorporar_asignatura("Nombre Asignatura", "COD123", 6, "Carrera", 2, Departamento.DIIC)
+    universidad.vincularProfesorAsignatura("COD123", "a-4356")
+    universidad.desvincularProfesorAsignatura("COD123", "a-4356")
+    profesor = universidad.devolverMiembro("a-4356")
+    assert "COD123" not in [asignatura.codigo_asignatura for asignatura in profesor.asignaturas()]
 
-def test_cambiarIdentificador():
+def test_cambiar_identificador():
     universidad = Universidad("Nombre Universidad", "Dirección Universidad")
-    universidad.add_profesor("Nombre Profesor", "Dirección Profesor", "87654321B", "456", "M", TipoMiembro.Titular, Departamento.DIIC)
-    universidad.cambiarIdentificador("456", "789")
-    profesor = universidad.devolver_miembro("789")
+    universidad.incorporar_profesor("Jorge Larrey", "Calle Olmo", "54328-B", "a-4356", Sexo.Masculino, TipoMiembro.Asociado, Departamento.DIIC)
+    universidad.cambiarIdentificador("a-4356", "nuevo-identificador")
+    profesor = universidad.devolverMiembro("nuevo-identificador")
     assert profesor is not None
+    assert profesor.ID == "nuevo-identificador"
 
-def test_cambiarNumeroExpediente():
+def test_cambiar_numero_expediente():
     universidad = Universidad("Nombre Universidad", "Dirección Universidad")
-    universidad.add_estudiante("Nombre Estudiante", "Dirección Estudiante", "12345678A", "123", "M")
+    sexo = Sexo.Masculino
+    universidad.incorporar_estudiante("Nombre Estudiante", "Dirección Estudiante", "12345678A", "123", sexo)
     universidad.cambiarNumeroExpediente("123", "456")
-    estudiante = universidad.devolver_estudiante("456")
+    estudiante = universidad.devolverEstudiante("456")
     assert estudiante is not None
+    assert estudiante.numero_expediente == "456"
 
-def test_cambiarCodigoAsignatura():
+def test_cambiar_codigo_asignatura():
     universidad = Universidad("Nombre Universidad", "Dirección Universidad")
-    universidad.add_asignatura("Nombre Asignatura", "COD123", 6, "Carrera", 2, Departamento.DIIC)
+    universidad.incorporar_asignatura("Nombre Asignatura", "COD123", 6, "Carrera", 2, Departamento.DIIC)
     universidad.cambiarCodigoAsignatura("COD123", "COD456")
-    asignatura = universidad.devolver_asignatura("COD456")
+    asignatura = universidad.devolverAsignatura("COD456")
     assert asignatura is not None
+    assert asignatura.codigo_asignatura == "COD456"
+
 
 
 
@@ -912,9 +924,7 @@ if __name__ == "__main__":
         u.incorporar_asignatura('Control de Procesos', '5000017', 6, 'Ing. Química', 3, Departamento.DIIC)
         #u.incorporar_asignatura('Control de Procesos', '50000100', 6, 'Ing. Química', 4, Departamento.DIIC)
         #u.incorporar_asignatura('Control de ProcesosII', '500001001', 6, 'Ing. Química', 3, 'Departamento de Qúmica')
-        #u.incorporar_asignatura('Control de ProcesosIII', '5000017', 'a', 'Ing. Química', 3, Departamento.DIIC)
 
-    
     except ExistingInformationError as ex:
         print(ex)
 

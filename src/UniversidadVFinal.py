@@ -115,7 +115,8 @@ class Persona(metaclass = ABCMeta):
 #CLASE MIEMBRODEPARTAMENTO
     #
     # Al igual que la clase Persona, la clase MiembroDepartaemnto tambien es abstracta y fuerza a sus clases derivadas (ProfesorASociado, ProfesorTitular e Investigador)
-    # a implementar el método devolverDatos. Pensamos que lo correcto sería que fuese una clase abstracta ya que no tiene sentido que se pueda instanciar.
+    # a implementar el método devolverDatos. Pensamos que lo correcto sería que fuese una clase abstracta ya que no tiene sentido que se pueda instanciar. Para que sea clase abstracta
+    # debe tener como mínimo un método sin instanciar, devolverDatos() en este caso.
     # Esta clase recoge los atributos propios de aquellas instancias que simulan a trabajadores de la Universidad. 
     # Los aributos que recibe son comprobados para evitar tipos de datos incorrectos, en caso de que lo sean salta la excepción pertinente.
     # Además esta clase implementa otros métodos que son heredados por sus clases derivadas y permiten llevar a cabo el cambio de departamento de los
@@ -132,10 +133,6 @@ class MiembroDepartamento(metaclass = ABCMeta):
         self.tipo = tipo
         self._departamento = departamento
             
-    @abstractmethod
-    def devolverDatos(self):
-        pass        
-    
     def devolverDepartamento(self):
         return self._departamento
     
@@ -146,7 +143,9 @@ class MiembroDepartamento(metaclass = ABCMeta):
         
         self._departamento = nuevo_departamento
 
-
+    @abstractmethod
+    def devolverDatos(self):
+        pass 
 
 #CLASE ASIGNATURA
     #
@@ -274,7 +273,7 @@ class Investigador(Persona, MiembroDepartamento):
         Persona.__init__(self, nombre, direccion, dni, sexo)
         MiembroDepartamento.__init__(self, identificador, tipo, departamento)
 
-        if not isinstance(area_investigacion, AreaInvestigacion): raise NotValidType()
+        if not isinstance(area_investigacion, AreaInvestigacion): raise NotValidType("Área de Investigación No válida")
 
         self.area_investigacion = area_investigacion
 
@@ -288,7 +287,7 @@ class Investigador(Persona, MiembroDepartamento):
         return self._dni
 
 
-#CLASE PROFESORASOCIADO
+#CLASE PROFESORTITULAR
     #
     # La clase profesor titular es una clase derivada de la clase Investigador, la cual hereda a su vez de las clases Persona y MimebroDepartamento.
     # Presenta un identificador al igual que todos los miembros de la Universidad (MiembroDepartamento), permitiendo su identificación en el sistema 
@@ -321,9 +320,6 @@ class ProfesorTitular(Investigador):
     def mostrar_asignaturas(self):
         for a in self.__listado_asignaturas:
             print(a)    
-
-    def devolverDni(self):
-        return self._dni
     
 
 
@@ -413,18 +409,18 @@ class Universidad:
             return self.__listado_investigadores[identificador]
         return None 
 
-    def devolverEstudiante(self, numero_expediente):   #Ok
+    def devolverEstudiante(self, numero_expediente):   
         if numero_expediente not in self.__listado_estudiantes:
             return None 
         return self.__listado_estudiantes[numero_expediente]
 
-    def devolverAsignatura(self, codigo_asignatura):    #Ok
+    def devolverAsignatura(self, codigo_asignatura):    
         if codigo_asignatura not in self.__listado_asignaturas:
             return None 
         return self.__listado_asignaturas[codigo_asignatura]
         
 
-    def incorporar_estudiante(self, nombre_estudiante, direccion, dni, numero_expediente, sexo):          #OK
+    def incorporar_estudiante(self, nombre_estudiante, direccion, dni, numero_expediente, sexo):          
         #Se hace una primera comprobación de que el usuario No ha sido todavía añadido a la Universidad
 
         if numero_expediente in self.__listado_estudiantes:
@@ -434,10 +430,8 @@ class Universidad:
         for e in self.__listado_estudiantes:
             es = self.__listado_estudiantes[e]
             if es.devolverDni() == dni:
-                raise ExistingInformationError("Error: Estudiante con dni ya añadido")
+                raise ExistingInformationError("Error: Estudiante con ese dni ya añadido")
                 
-            
-
         
         self.__listado_estudiantes[numero_expediente] = Estudiante(nombre_estudiante, direccion, dni, numero_expediente, sexo)                                           
 
@@ -452,9 +446,12 @@ class Universidad:
             if self.__listado_profesores[id].devolverDni() == dni:
                 raise ExistingInformationError("Error: Profesor ya añadido")
 
-        
+
         if tipo.value == 2:
-            profesor = ProfesorAsociado(nombre, direccion, dni, identificador, sexo, tipo, departamento)
+            if area_investigacion is None:
+                profesor = ProfesorAsociado(nombre, direccion, dni, identificador, sexo, tipo, departamento)
+            else: raise NotValidType("Error: Un profesor Ascociado No puede tener Área de Investigación")  
+        
         if tipo.value == 3:
             profesor = ProfesorTitular(nombre, direccion, dni, identificador, sexo, tipo, departamento, area_investigacion)
 
@@ -470,8 +467,7 @@ class Universidad:
         for id in self.__listado_investigadores:
             if self.__listado_investigadores[id].devolverDni() == dni:
                 raise ExistingInformationError("Error: Investigador ya añadido")
-            
-        
+              
         
         self.__listado_investigadores[identificador] = Investigador(nombre, direccion, dni, identificador, sexo, TipoMiembro.Investigador, departamento, area_investigacion)
 
@@ -485,60 +481,79 @@ class Universidad:
         self.__listado_asignaturas[codigo_asignatura] = Asignatura(nombre, codigo_asignatura, creditos, carrera, departamento, curso)
 
 
-    def mostrar_estudiantes(self):  #OK
+    # Este método incorporarMiembroDepartamento() al ser genérico para cualquier tipo de miembro, se le debe pasar el tipo de miembro del que se trata.
+
+    def incorporarMiembroDepartamento(self, nombre, direccion, dni, identificador, sexo, tipo, departamento, area_investigacion = None):
+            
+        if tipo == TipoMiembro.Investigador:
+            self.incorporar_investigador(nombre, direccion, dni, identificador, sexo, departamento, area_investigacion)
+
+        else:
+            self.incorporar_profesor(nombre, direccion, dni, identificador, sexo, tipo, departamento, area_investigacion)
+
+            
+
+    def mostrar_estudiantes(self):  
         print("Estudiantes dados de alta:")
         for id in self.__listado_estudiantes:
             print(self.__listado_estudiantes[id])
 
 
-    def mostrar_investigadores(self):   #OK
+    def mostrar_investigadores(self):   
+        print("Investigadores dados de alta:")
+
         for investigador in self.__listado_investigadores:
             print(self.__listado_investigadores[investigador])
 
     
-    def mostrar_profesores_titulares(self): #Ok
+    def mostrar_profesores_titulares(self): 
+        print("Profesores titulares dados de alta:")
+
         for profesor in self.__listado_profesores:
             if self.__listado_profesores[profesor].tipo == TipoMiembro.Titular:
                 print(self.__listado_profesores[profesor])
 
-    def mostrar_profesores_asociados(self): #Ok
+    def mostrar_profesores_asociados(self): 
+        print("Profesores Asociados dados de alta:")
+
         for profesor in self.__listado_profesores:
             if self.__listado_profesores[profesor].tipo == TipoMiembro.Asociado:
                 print(self.__listado_profesores[profesor])
             
-    def mostrar_profesores(self):       #OK
+    def mostrar_profesores(self):       
+        print("Profesores de la universidad")
         for profesor in self.__listado_profesores:
                 print(self.__listado_profesores[profesor])
 
 
-    def mostrar_asignaturas_departamento(self, departamento):   #OK
+    def mostrar_asignaturas_departamento(self, departamento):   
         if not isinstance(departamento, Departamento):
             raise DepartamentoError()
             
-        
+        print("Asignaturas de",departamento.name)
         for asignatura in self.__listado_asignaturas:
             if self.__listado_asignaturas[asignatura].devolverDepartamento() == departamento:
                 print(self.__listado_asignaturas[asignatura])
             
 
-    def mostrar_miembros_departamento(self, departamento):  #OK
+    def mostrar_miembros_departamento(self, departamento):  
         if not isinstance(departamento, Departamento):
             raise DepartamentoError()
             
-        
-        print("Investigadores")
+        print("Miembros del departamento",departamento.name)
+        print("INVESTIGADORES")
         for investigador in self.__listado_investigadores:
             if self.__listado_investigadores[investigador].devolverDepartamento() == departamento:
                 print(self.__listado_investigadores[investigador])
 
-        print("Profesores")
+        print("PROFESORES")
         for profesor in self.__listado_profesores:
             if self.__listado_profesores[profesor].devolverDepartamento() == departamento:
                 print(self.__listado_profesores[profesor])
         
 
         
-    def eliminar_estudiante(self, identificador):   #OK
+    def eliminar_estudiante(self, identificador):   
 
         if identificador not in self.__listado_estudiantes: 
             raise IdentifierError("Error: Estudiante No encontrado")   
@@ -546,7 +561,7 @@ class Universidad:
         del self.__listado_estudiantes[identificador]                                                                   
 
 
-    def eliminar_miembro(self, identificador):          #OK
+    def eliminar_miembro(self, identificador):          
 
         if identificador in self.__listado_investigadores:
            del self.__listado_investigadores[identificador]
@@ -559,7 +574,7 @@ class Universidad:
 
 
 
-    def eliminar_asignatura(self, codigo_asignatura):       #Ok
+    def eliminar_asignatura(self, codigo_asignatura):       
 
         if codigo_asignatura not in self.__listado_asignaturas:
             raise IdentifierError("Error: Asignatura No encontrada")
@@ -583,7 +598,7 @@ class Universidad:
             
 
 
-    def cambiarDepartamento(self, identificador_miembro, nuevo_departamento):       #OK
+    def cambiarDepartamento(self, identificador_miembro, nuevo_departamento):       
 
         if not isinstance(nuevo_departamento, Departamento): raise DepartamentoError()
 
@@ -599,7 +614,7 @@ class Universidad:
       
 
 
-    def matricular(self, codigo_asignatura, identificador_estudiante):       #OK
+    def matricular(self, codigo_asignatura, identificador_estudiante):       
         asignatura = self.devolverAsignatura(codigo_asignatura)
         if asignatura is None: 
             raise IdentifierError("Error: La asignatura no existe")
@@ -611,7 +626,7 @@ class Universidad:
         estudiante.matricular(asignatura)
 
     
-    def desmatricular(self, codigo_asignatura, identificador_estudiante):       #OK
+    def desmatricular(self, codigo_asignatura, identificador_estudiante):       
         asignatura = self.devolverAsignatura(codigo_asignatura)
         if asignatura is None:
             raise IdentifierError("Error: La asignatura no existe")
@@ -628,7 +643,7 @@ class Universidad:
 
 
 
-    def vincularProfesorAsignatura(self, codigo_asignatura, identificador_profesor):        #Ok
+    def vincularProfesorAsignatura(self, codigo_asignatura, identificador_profesor):        
 
         asignatura = self.devolverAsignatura(codigo_asignatura)
         if asignatura is None:
@@ -644,7 +659,7 @@ class Universidad:
         profesor.incorporar_asignatura(asignatura)
         
 
-    def desvincularProfesorAsignatura(self, codigo_asignatura, identificador_profesor):       #Ok
+    def desvincularProfesorAsignatura(self, codigo_asignatura, identificador_profesor):       
 
         asignatura = self.devolverAsignatura(codigo_asignatura)
         if asignatura is None:
@@ -660,7 +675,7 @@ class Universidad:
         profesor.eliminar_asignatura(asignatura)
 
 
-    def cambiarIdentificador(self, identificador, nuevo_identificador): #OK
+    def cambiarIdentificador(self, identificador, nuevo_identificador): 
         miembro = self.devolverMiembro(identificador)
         if miembro is None:
             raise IdentifierError("Error: El miembro no existe")
@@ -674,7 +689,7 @@ class Universidad:
             self.__listado_profesores[nuevo_identificador] = miembro
 
     
-    def cambiarNumeroExpediente(self, numero_expediente, nuevo_numero_expediente):  #OK
+    def cambiarNumeroExpediente(self, numero_expediente, nuevo_numero_expediente):  
         estudiante = self.devolverEstudiante(numero_expediente)
         if estudiante is None:
             raise IdentifierError("Error: El estudiante no existe")
@@ -685,7 +700,7 @@ class Universidad:
         
 
 
-    def cambiarCodigoAsignatura(self, codigo, codigo_nuevo):        #OK
+    def cambiarCodigoAsignatura(self, codigo, codigo_nuevo):        
         asignatura = self.devolverAsignatura(codigo)
         if asignatura is None:
             raise IdentifierError("Error: La asignatura indicada no existe") 
@@ -697,7 +712,7 @@ class Universidad:
 
 
 
-    def calcularMatricula(self, numero_expediente):     #OK
+    def calcularMatricula(self, numero_expediente):     
         total = 0
         estudiante = self.devolverEstudiante(numero_expediente)
         if estudiante is None:
@@ -810,19 +825,44 @@ def test_cambiar_codigo_asignatura():
     assert asignatura is not None
     assert asignatura.codigo_asignatura == "COD456"
 
+def test_incorporar_miembro_departamento():
 
+    universidad = Universidad("Nombre Universidad", "Dirección Universidad")
+
+    # Definir los atributos del miembro del departamento
+    nombre = "Dr. Alberto Pérez"
+    direccion = "Avenida de la Ciencia 456"
+    dni = "12345678Z"
+    identificador = "PROF001"
+    sexo = Sexo.Masculino
+    tipo = TipoMiembro.Titular
+    departamento = Departamento.DIIC
+    area_investigacion = AreaInvestigacion.Software
+
+    if tipo == TipoMiembro.Investigador:
+        universidad.incorporar_investigador(nombre, direccion, dni, identificador, sexo, departamento, area_investigacion)
+    elif tipo in [TipoMiembro.Asociado, TipoMiembro.Titular]:
+        universidad.incorporar_profesor(nombre, direccion, dni, identificador, sexo, tipo, departamento, area_investigacion)
+    else:
+        assert False, f"Tipo de miembro no manejado: {tipo}"
+
+    miembro = universidad.devolverMiembro(identificador)
+    assert miembro is not None, "El miembro no ha sido incorporado correctamente"
+    assert miembro.nombre == nombre, "El nombre del miembro no coincide"
+    assert miembro.devolverDni() == dni, "El DNI del miembro no coincide"
+    assert miembro.tipo == tipo, "El tipo de miembro no coincide"
+    # Verificar que el departamento del miembro es el correcto
+    assert miembro.devolverDepartamento() == departamento, "El departamento del miembro no coincide"
 
 
 
 if __name__ == "__main__":
 
-    e1 = Estudiante('Juan', 'Aurora, 8', '54673', 'e-9987',Sexo.Masculino)
-    print(e1)
-    #print(e1.devolver_direccion())
-        
 
-    p1 = ProfesorTitular('juan', 'Alcala', '44594', 'a-8889',Sexo.Masculino, TipoMiembro.Titular, Departamento.DIS, AreaInvestigacion.Software)
-    print(p1)
+    # En principio las líneas de código que harían saltar excepciones estan comentadas. 
+    # Quítese el comentario para poder ver el funcionamiento de las excepciones
+    # La idea es que sean solo informadas, para que el programa no aborte, no obstante en algunos casos hemos usado un raise.
+
 
 #Creamos la universidad y añadimos a los estudiantes
 #Véase como el ultimo estudiante está repetido.
@@ -844,7 +884,7 @@ if __name__ == "__main__":
         
     except NotValidType as msg1:
         print(msg1)
-
+        #raise
     except IdentifierError as msg2:
         print(msg2)
         
@@ -859,9 +899,9 @@ if __name__ == "__main__":
         u.incorporar_profesor('Jorge Larrey', 'Calle Olmo', '54328-B', 'a-4356',Sexo.Masculino, TipoMiembro.Asociado, Departamento.DIIC)
         u.incorporar_profesor('Ana Martínez', 'Calle del Bosque', '54321-A', 'a-9876', Sexo.Femenino, TipoMiembro.Titular, Departamento.DIIC, AreaInvestigacion.Software)
         u.incorporar_profesor('Pedro Sánchez', 'Avenida del Rio', '98765-B', 'b-5432', Sexo.Masculino, TipoMiembro.Asociado, Departamento.DIS)
-        u.incorporar_profesor('Laura Fernández', 'Calle de la Luna', '13579-C', 'c-2468', Sexo.Femenino, TipoMiembro.Titular, Departamento.DITEC, AreaInvestigacion.AprendizajeProfundo)
+        u.incorporarMiembroDepartamento('Laura Fernández', 'Calle de la Luna', '13579-C', 'c-2468', Sexo.Femenino, TipoMiembro.Titular, Departamento.DITEC, AreaInvestigacion.AprendizajeProfundo)
         u.incorporar_profesor('Luis Rodríguez', 'Carrera del Sol', '24680-D', 'd-1357', Sexo.Masculino, TipoMiembro.Asociado, Departamento.DIIC)
-        u.incorporar_profesor('María García', 'Avenida de las Flores', '98765-E', 'e-8642', Sexo.Femenino, TipoMiembro.Titular, Departamento.DIIC, AreaInvestigacion.ComputacionAltasPrestaciones)
+        u.incorporarMiembroDepartamento('María García', 'Avenida de las Flores', '98765-E', 'e-8642', Sexo.Femenino, TipoMiembro.Titular, Departamento.DIIC, AreaInvestigacion.ComputacionAltasPrestaciones)
         u.incorporar_profesor('Juan Pérez', 'Calle de los Pinos', '54321-F', 'f-7293', Sexo.Masculino, TipoMiembro.Asociado, Departamento.DITEC)
         u.incorporar_profesor('Sofía Martín', 'Avenida de las Palmeras', '13579-G', 'g-5312', Sexo.Femenino, TipoMiembro.Titular, Departamento.DIS, AreaInvestigacion.InvestigacionOperativa)
         #u.incorporar_profesor('Martina Martinez', 'Avenida de las Palmeras', '13580-T', 'g-5312', Sexo.Femenino, TipoMiembro.Titular, Departamento.DIS, AreaInvestigacion.InvestigacionOperativa)
@@ -870,7 +910,7 @@ if __name__ == "__main__":
         u.incorporar_investigador('Laura González', 'Calle del Sol', '54321-C', 'i-9876543', Sexo.Femenino, Departamento.DIIC, AreaInvestigacion.InvestigacionOperativa)
         u.incorporar_investigador('Carlos Martínez', 'Avenida de las Flores', '98765-D', 'i-1234567', Sexo.Masculino, Departamento.DIS, AreaInvestigacion.Software)
         u.incorporar_investigador('Ana García', 'Calle de los Pinos', '13579-E', 'i-2468101', Sexo.Femenino, Departamento.DITEC, AreaInvestigacion.AprendizajeMaquina)
-        u.incorporar_investigador('David Sánchez', 'Avenida de las Palmeras', '98765-F', 'i-987654', Sexo.Masculino, Departamento.DIIC, AreaInvestigacion.AprendizajeProfundo)
+        u.incorporarMiembroDepartamento('David Sánchez', 'Avenida de las Palmeras', '98765-F', 'i-987654', Sexo.Masculino,TipoMiembro.Investigador, Departamento.DIIC, AreaInvestigacion.AprendizajeProfundo)
         u.incorporar_investigador('María Rodríguez', 'Calle de la Luna', '54321-G', 'i-123456', Sexo.Femenino, Departamento.DIS, AreaInvestigacion.ArquitecturaDeComputadores)
         u.incorporar_investigador('Juan Pérez', 'Calle del Bosque', '13579-H', 'i-246810', Sexo.Masculino, Departamento.DITEC, AreaInvestigacion.ComputacionAltasPrestaciones)
         u.incorporar_investigador('Sofía Martín', 'Avenida del Rio', '98765-I', 'i-9876545', Sexo.Femenino, Departamento.DIIC, AreaInvestigacion.InvestigacionOperativa)
@@ -879,10 +919,16 @@ if __name__ == "__main__":
         u.incorporar_investigador('Antonio González', 'Avenida de los Olivos', '98765-L', 'i-9876546', Sexo.Masculino, Departamento.DIIC, AreaInvestigacion.AprendizajeProfundo)
         u.incorporar_investigador('María Martínez', 'Calle de las Palmeras', '54321-M', 'i-1234562', Sexo.Femenino, Departamento.DIS, AreaInvestigacion.ArquitecturaDeComputadores)
         #u.incorporar_investigador('María Martínez', 'Calle de las Palmeras', '54321-M', 'i-1234562', Sexo.Femenino, Departamento.DIS, AreaInvestigacion.ArquitecturaDeComputadores)
+        u.incorporarMiembroDepartamento('José López', 'Plaza de las Flores', '54301-J', 'i-12320763', Sexo.Masculino, TipoMiembro.Investigador, Departamento.DIS, AreaInvestigacion.Software)
+        #u.incorporarMiembroDepartamento('José López', 'Plaza de las Flores', '54301-J', 'i-12320763', Sexo.Masculino, TipoMiembro.Investigador, Departamento.DIS, AreaInvestigacion.Software)
+        #u.incorporarMiembroDepartamento('Juan López', 'Plaza del submarino', '543990301-J', 'i-073', Sexo.Masculino, TipoMiembro.Asociado, Departamento.DIS, AreaInvestigacion.Software)
+        #u.incorporarMiembroDepartamento('Juan López', 'Plaza del submarino', '543990301-J', 'i-073', Sexo.Masculino, TipoMiembro.Titular, Departamento.DIS)
+
+
 
     except NotValidType as msg1:
         print(msg1)
-        
+        #raise
 
     except DepartamentoError as msg3:
         print(msg3)
@@ -924,27 +970,28 @@ if __name__ == "__main__":
         u.incorporar_asignatura('Control de Procesos', '5000017', 6, 'Ing. Química', 3, Departamento.DIIC)
         #u.incorporar_asignatura('Control de Procesos', '50000100', 6, 'Ing. Química', 4, Departamento.DIIC)
         #u.incorporar_asignatura('Control de ProcesosII', '500001001', 6, 'Ing. Química', 3, 'Departamento de Qúmica')
+        #u.incorporar_asignatura('Control de ProcesosIII', '5000017', 'a', 'Ing. Química', 3, Departamento.DIIC)
 
+    
     except ExistingInformationError as ex:
         print(ex)
 
     except NotValidType as nv:
         print(nv)
-
+        #raise
     except DepartamentoError as d:
         print(d)
+        #raise
 
 
-#Al mostrar la información en principio no debe haber ningún error
-
-        a = u.devolverMiembro('i-246810')
-        print(a)
-        u.mostrar_estudiantes()
-        print("\n")
-        u.mostrar_investigadores()
-        print("\n")
-        u.mostrar_profesores()
-        print("\n")
+    a = u.devolverMiembro('i-246810')
+    print(a)
+    u.mostrar_estudiantes()
+    print("\n")
+    u.mostrar_investigadores()
+    print("\n")
+    u.mostrar_profesores()
+    print("\n")
 
 
 
@@ -999,7 +1046,7 @@ if __name__ == "__main__":
         u.mostrar_profesores()
 
         u.eliminar_asignatura('5000002')
-        u.eliminar_asignatura('5000002')
+        #u.eliminar_asignatura('5000002')
         print("\n")
 
     except IdentifierError as id:
@@ -1035,6 +1082,9 @@ if __name__ == "__main__":
     #Lo desmatriculo de una de las asignaturas
         print("\n")
         u.desmatricular('5000004','e-3324881')
+        print("Hola")
+        #u.desmatricular('5','e-3324881')
+
         alumno.mostrar_asignaturas()
     
 
@@ -1095,4 +1145,5 @@ if __name__ == "__main__":
     except IdentifierError as msg5:
         print(msg5)
      
-        
+    nuevo = u.devolverMiembro('i-12320763')
+    print(nuevo)
